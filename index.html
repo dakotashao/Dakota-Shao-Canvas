@@ -371,12 +371,12 @@ details p { color: var(--muted); padding-bottom: 16px; max-width: 52ch; }
   const W = 1200, H = 700;
   const canvas = document.getElementById("canvas"), stage = document.getElementById("stage"), zoom = document.getElementById("zoom");
   const narrowQ = matchMedia("(max-width: 760px)"), reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
-  let s = 1;
+  let s = 1, ox0 = 0, oy0 = 0;
   const fit = () => {
     if (narrowQ.matches) { s = 1; stage.style.transform = ""; canvas.style.height = ""; return; }
     const cw = canvas.clientWidth, ch = canvas.clientHeight - 40;
     s = Math.min(1, cw / (W + 80), ch / H);
-    const x = (cw - W * s) / 2, y = Math.max(0, (ch - H * s) / 2);
+    const x = (cw - W * s) / 2, y = Math.max(0, (ch - H * s) / 2); ox0 = x; oy0 = y;
     stage.style.transform = `translate(${x.toFixed(1)}px, ${y.toFixed(1)}px) scale(${s})`;
     zoom.textContent = Math.round(s * 100) + "%";
   };
@@ -393,8 +393,9 @@ details p { color: var(--muted); padding-bottom: 16px; max-width: 52ch; }
     o.classList.add("is-sel"); o.style.zIndex = ++top;
     o.querySelector(".sel-box b").textContent = `${o.offsetWidth} × ${o.offsetHeight}`;
   };
-  const clampX = (o, x) => Math.max(-30, Math.min(W - o.offsetWidth + 30, x));
-  const clampY = (o, y) => Math.max(40, Math.min(H - o.offsetHeight + 10, y));
+  // layers can travel anywhere inside the visible board (the whole window on wide screens), not just the 1200 x 700 layout area
+  const clampX = (o, x) => { const lo = -ox0 / s + 8, hi = (canvas.clientWidth - ox0) / s - o.offsetWidth - 8; return Math.max(Math.min(lo, -30), Math.min(Math.max(hi, W - o.offsetWidth + 30), x)); };
+  const clampY = (o, y) => { const lo = -oy0 / s + 8, hi = (canvas.clientHeight - oy0) / s - o.offsetHeight - 8; return Math.max(Math.min(lo, 40), Math.min(Math.max(hi, H - o.offsetHeight + 10), y)); };
   objs.forEach((o) => {
     o.addEventListener("focus", () => { if (current !== o) select(o, true); });
     o.addEventListener("keydown", (e) => {
